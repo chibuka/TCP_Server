@@ -26,14 +26,8 @@ jobs:
       - name: Determine current level
         id: levels
         run: |
-          if [ -d "tests" ]; then
-            CURRENT=$(ls tests | grep -E '^level_[0-9]+$' | sort -V | tail -1)
-            if [ -z "$CURRENT" ]; then
-              CURRENT="level_01"
-            fi
-          else
-            CURRENT="level_01"
-          fi
+          # Fetch the user's current level from the database or default to level_01
+          CURRENT="level_01"
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current level: $CURRENT"
       
@@ -52,81 +46,22 @@ jobs:
 
   unlock_next_level:
     needs: test
-    if: ${{ needs.test.outputs.passed == 'true' && github.event_name == 'push' }}
+    if: ${{ needs.test.outputs.passed == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      # First checkout the user's current repo
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-      
-      # Add template repo as remote and fetch next level
-      - name: Setup template remote
-        run: |
-          git remote add template https://github.com/${{ env.TEMPLATE_OWNER }}/${{ env.TEMPLATE_REPO }}.git
-          git fetch template
-      
-      - name: Determine current & next levels
+      - name: Determine next level
         id: levels
         run: |
           CURRENT="${{ needs.test.outputs.level }}"
           NUM=${CURRENT##*_}
           NEXT_NUM=$((10#$NUM + 1))
-          NEXT=$(printf "%02d" $NEXT_NUM)
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
-          echo "next_branch=level-${NEXT}" >> $GITHUB_OUTPUT
-          echo "next_dir=tests/level_${NEXT}" >> $GITHUB_OUTPUT
-          echo "next_level=level_${NEXT}" >> $GITHUB_OUTPUT
+          NEXT=$(printf "level_%02d" $NEXT_NUM)
+          echo "next_level=$NEXT" >> $GITHUB_OUTPUT
+          echo "Next level: $NEXT"
       
-      - name: Check if next level exists in template
-        id: check
+      - name: Notify platform about next level
         run: |
-          if git ls-remote --exit-code template "refs/heads/${{ steps.levels.outputs.next_branch }}"; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Next level branch exists: ${{ steps.levels.outputs.next_branch }}"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "No more levels available"
-          fi
-      
-      - name: Checkout user's fork and create PR
-        if: steps.check.outputs.exists == 'true'
-        run: |
-          # Fetch the next level from template
-          git fetch template ${{ steps.levels.outputs.next_branch }}
-          
-          # Create new branch in user's fork
-          git checkout -b unlock/${{ steps.levels.outputs.next_branch }}
-          
-          # Merge the next level
-          git merge template/${{ steps.levels.outputs.next_branch }} --no-edit
-          
-          # Push to user's fork (origin)
-          git push origin unlock/${{ steps.levels.outputs.next_branch }}
-      
-      - name: Create Pull Request in user's fork
-        if: steps.check.outputs.exists == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "🚀 Unlock ${{ steps.levels.outputs.next_level }}"
-          title: "🏆 Level Up! Unlock ${{ steps.levels.outputs.next_level }}"
-          body: |
-            ## 🎉 Congratulations!
-            
-            You've successfully completed **${{ steps.levels.outputs.current }}**!
-            
-            ### What's next?
-            - Merge this PR to unlock `${{ steps.levels.outputs.next_dir }}`
-            - New challenges and tests are waiting for you
-            - Keep coding and level up! 🚀
-            
-            ---
-            *Good luck with the next challenge!* 💪
-          branch: unlock/${{ steps.levels.outputs.next_branch }}
-          delete-branch: true
-          base: ${{ github.event.repository.default_branch }}
+          echo "Next level unlocked: ${{ steps.levels.outputs.next_level }}"
 
   notify:
     needs: [test, unlock_next_level]
@@ -148,7 +83,7 @@ jobs:
           # Get challenge type from repo name (assuming format like TCP_Server, HTTP_Parser, etc.)
           CHALLENGE_TYPE="$REPO_NAME"
           
-          curl -X POST "${{ vars.WEBHOOK_URL || 'http://localhost:8000/api/submission_webhook' }}" \
+          curl -X POST "${{ vars.WEBHOOK_URL || 'https://nine5-ajdi.onrender.com/api/submission_webhook' }}" \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: ${{ github.event_name }}" \

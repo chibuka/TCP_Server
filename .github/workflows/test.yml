@@ -83,7 +83,11 @@ jobs:
           # Get challenge type from repo name (assuming format like TCP_Server, HTTP_Parser, etc.)
           CHALLENGE_TYPE="$REPO_NAME"
           
+<<<<<<< HEAD
           curl -X POST "${{ vars.WEBHOOK_URL || 'https://nine5-ajdi.onrender.com/api/submission_webhook' }}" \
+=======
+          curl -X POST "${{ 'https://nine5-ajdi.onrender.com/api/submissions/submission_webhook' }}" \
+>>>>>>> fe8b8aa (fixed WEBHOOK_URL issue)
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: ${{ github.event_name }}" \

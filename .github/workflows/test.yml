@@ -83,7 +83,24 @@ jobs:
           # Get challenge type from repo name (assuming format like TCP_Server, HTTP_Parser, etc.)
           CHALLENGE_TYPE="$REPO_NAME"
           
-          curl -X POST "${{ 'https://nine5-ajdi.onrender.com/api/submissions/submission_webhook' }}" \
+          # Debugging the variables
+          echo "User: ${{ github.actor }}"
+          echo "Repo Owner: $REPO_OWNER"
+          echo "Repo Name: $REPO_NAME"
+          echo "Repository: ${{ github.repository }}"
+          echo "Challenge Type: $CHALLENGE_TYPE"
+          echo "Level: ${{ needs.test.outputs.level }}"
+          echo "Status: ${{ needs.test.result }}"
+          echo "Tests Passed: ${{ needs.test.outputs.passed }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Event Type: ${{ github.event_name }}"
+          echo "Next Level Unlocked: $NEXT_UNLOCKED"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          
+          # Execute the curl command
+          curl -X POST "https://nine5-ajdi.onrender.com/api/submissions/submission_webhook" \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: ${{ github.event_name }}" \

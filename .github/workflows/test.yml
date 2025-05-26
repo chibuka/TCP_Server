@@ -27,7 +27,7 @@ jobs:
         id: levels
         run: |
           # Fetch the user's current level from the database or default to level_01
-          CURRENT="level_01"
+          CURRENT="1"
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current level: $CURRENT"
       

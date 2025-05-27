@@ -26,8 +26,15 @@ jobs:
       - name: Determine current level
         id: levels
         run: |
-          # Fetch the user's current level from the database or default to level_01
-          CURRENT="level_01"
+          # Fetch the user's current level from the database
+          CURRENT=$(curl -s -X GET "https://nine5-ajdi.onrender.com/api/users/${{ github.actor }}/progress?challenge_id=d5467ce5-576f-4c9a-8287-cb54b126bb6e" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}" \
+            -H "Content-Type: application/json" | jq -r '.current_level')
+          
+          # Default to level_01 if not found
+          if ["$CURRENT" == "null" || -z "$CURRENT" ]; then
+            CURRENT="level_01"
+          fi
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current level: $CURRENT"
       
@@ -53,7 +60,7 @@ jobs:
         id: levels
         run: |
           CURRENT="${{ needs.test.outputs.level }}"
-          NUM=${CURRENT##*_}
+          NUM=${CURRENT#d#*_}
           NEXT_NUM=$((10#$NUM + 1))
           NEXT=$(printf "level_%02d" $NEXT_NUM)
           echo "next_level=$NEXT" >> $GITHUB_OUTPUT

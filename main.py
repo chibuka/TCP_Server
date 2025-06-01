@@ -19,7 +19,7 @@ def handle_client(conn):
         else:
             conn.sendall(b"ERROR\n")
 
-def start_server(port=12345):
+def start_server(port=4221):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Port reuse
     s.bind(('localhost', port))
